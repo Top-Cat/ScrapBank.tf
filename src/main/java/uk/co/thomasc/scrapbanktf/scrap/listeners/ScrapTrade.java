@@ -218,14 +218,16 @@ public class ScrapTrade extends TradeListener {
 
 			for (final long child : trade.MyItems.getIds()) {
 				final Item item = trade.MyInventory.getItem(child);
-				if (reserved.contains(item.defIndex) && !alreadyTrade.contains(item.id)) {
-					trade.addItem(child, slot++);
-					reservedGiven.add(item.defIndex);
-					reserved.remove((Integer) item.defIndex);
-					if (scrapA > 0) {
-						scrapA--;
-					} else {
-						scrapB--;
+				if (item != null) {
+					if (reserved.contains(item.defIndex) && !alreadyTrade.contains(item.id)) {
+						trade.addItem(child, slot++);
+						reservedGiven.add(item.defIndex);
+						reserved.remove((Integer) item.defIndex);
+						if (scrapA > 0) {
+							scrapA--;
+						} else {
+							scrapB--;
+						}
 					}
 				}
 			}

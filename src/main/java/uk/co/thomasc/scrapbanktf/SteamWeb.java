@@ -22,6 +22,7 @@ import org.json.simple.parser.ParseException;
 
 import sun.misc.BASE64Encoder;
 
+import uk.co.thomasc.scrapbanktf.util.Util;
 import uk.co.thomasc.steamkit.util.crypto.RSACrypto;
 
 @SuppressWarnings("restriction")
@@ -108,7 +109,7 @@ public class SteamWeb {
 			SteamResult loginJson = null;
 			//String cookies;
 			do {
-				System.out.println("SteamWeb: Logging In...");
+				Util.printConsole("SteamWeb: Logging In...");
 
 				final boolean captcha = loginJson != null && loginJson.captcha_needed == true;
 
@@ -129,7 +130,7 @@ public class SteamWeb {
 				// Captcha
 				String capText = "";
 				if (captcha) {
-					System.out.println("SteamWeb: Captcha is needed.");
+					Util.printConsole("SteamWeb: Captcha is needed.");
 					final Desktop desktop = java.awt.Desktop.getDesktop();
 					if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
 						try {
@@ -140,14 +141,14 @@ public class SteamWeb {
 
 						final InputStreamReader isr = new InputStreamReader(System.in);
 						final BufferedReader br = new BufferedReader(isr);
-						System.out.println("SteamWeb: Type the captcha:");
+						Util.printConsole("SteamWeb: Type the captcha:");
 						try {
 							capText = URLEncoder.encode(br.readLine(), "UTF-8");
 						} catch (final IOException e) {
 							e.printStackTrace();
 						}
 					} else {
-						System.out.println("Desktop not supported");
+						Util.printConsole("Desktop not supported");
 						return null;
 					}
 				}
@@ -173,7 +174,7 @@ public class SteamWeb {
 				//submitCookies(cookies);
 				//return cookies;
 			} else {
-				System.out.println("SteamWeb Error: " + loginJson.message);
+				Util.printConsole("SteamWeb Error: " + loginJson.message);
 			}
 		} catch (final ParseException e) {
 			e.printStackTrace();
@@ -202,7 +203,7 @@ public class SteamWeb {
 
 	static byte[] hexToByte(String hex) {
 		if (hex.length() % 2 == 1) {
-			System.out.println("The binary key cannot have an odd number of digits");
+			Util.printConsole("The binary key cannot have an odd number of digits");
 			return new byte[0];
 		}
 

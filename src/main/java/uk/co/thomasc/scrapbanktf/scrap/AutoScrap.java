@@ -40,14 +40,18 @@ public class AutoScrap {
 
 	public void onWelcome() {
 		ingame = true;
-		notify();
+		synchronized (this) {
+			notify();
+		}
 	}
 
 	private void scrap(long item1, long item2) {
 		if (!ingame) {
 			opengame();
 			try {
-				wait();
+				synchronized (this) {
+					wait();
+				}
 			} catch (final InterruptedException e) {
 				e.printStackTrace();
 			}

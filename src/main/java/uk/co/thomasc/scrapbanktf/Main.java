@@ -6,7 +6,9 @@ import java.util.Map;
 
 import org.yaml.snakeyaml.Yaml;
 
+import uk.co.thomasc.scrapbanktf.util.ConsoleColor;
 import uk.co.thomasc.scrapbanktf.util.SQL;
+import uk.co.thomasc.scrapbanktf.util.Util;
 import uk.co.thomasc.steamkit.types.steamid.SteamID;
 
 public class Main {
@@ -31,7 +33,7 @@ public class Main {
 
 		byte counter = 0;
 		for (final Map<String, Object> info : (List<Map<String, Object>>) Main.yml.get("bots")) {
-			System.out.println("Launching bot " + counter++);
+			Util.printConsole("Launching bot " + counter++);
 			new Thread(new BotThread(new BotInfo(info))).start();
 			try {
 				Thread.sleep(5000);
@@ -56,8 +58,11 @@ public class Main {
 				try {
 					new Bot(info);
 				} catch (final Exception e) {
-					e.printStackTrace();
-					System.out.println(crashes++);
+					String error = "Unhandled error on bot " +  crashes++ + "\n" + e.getMessage();
+					for (StackTraceElement el : e.getStackTrace()) {
+						error += "\n" + el;
+					}
+					Util.printConsole(error, info.getId(), ConsoleColor.White, true);
 				}
 			}
 		}

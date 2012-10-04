@@ -126,8 +126,11 @@ public class Bot {
 			try {
 				currentTrade.Poll();
 			} catch (final Exception e) {
-				System.out.println("Error polling the trade: ");
-				e.printStackTrace();
+				String error = "Error polling the trade: ";
+				for (StackTraceElement el : e.getStackTrace()) {
+					error += "\n" + el;
+				}
+				Util.printConsole(error, this);
 			}
 		}
 	}

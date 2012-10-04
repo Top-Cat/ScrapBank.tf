@@ -52,25 +52,37 @@ public class Util {
 	private static Object lck = new Object();
 
 	public static void printConsole(String line) {
-		Util.printConsole(line, null, ConsoleColor.White, true);
+		Util.printConsole(line, 0, ConsoleColor.White, true);
 	}
 
 	public static void printConsole(String line, Bot bot) {
+		Util.printConsole(line, bot.getBotId());
+	}
+	
+	public static void printConsole(String line, int bot) {
 		Util.printConsole(line, bot, ConsoleColor.White);
 	}
-
+	
 	public static void printConsole(String line, Bot bot, ConsoleColor color) {
+		Util.printConsole(line, bot.getBotId(), color);
+	}
+	
+	public static void printConsole(String line, int bot, ConsoleColor color) {
 		Util.printConsole(line, bot, color, false);
 	}
 
 	public static void printConsole(String line, Bot bot, ConsoleColor color, boolean isDebug) {
+		Util.printConsole(line, bot.getBotId(), color, isDebug);
+	}
+	
+	public static void printConsole(String line, int bot, ConsoleColor color, boolean isDebug) {
 		synchronized (Util.lck) {
 			final String lineC = color.v() + line + ConsoleColor.Reset.v();
 			if (isDebug && Util.isDebugMode) {
-				System.out.println("(" + bot.getBotId() + ") [DEBUG] " + lineC);
+				System.out.println("(" + bot + ") [DEBUG] " + lineC.replace("\n", "\n(" + bot + ") [DEBUG] "));
 			} else if (!isDebug) {
-				System.out.println("(" + bot.getBotId() + ")         " + lineC);
-				Main.sql.query("INSERT INTO botLogs (botid, message, color) VALUES ('" + bot.getBotId() + "', '" + line + "', '" + color.getInt() + "')");
+				System.out.println("(" + bot + ")         " + lineC.replace("\n", "\n(" + bot + ")         "));
+				Main.sql.query("INSERT INTO botLogs (botid, message, color) VALUES ('" + bot + "', '" + line.substring(0, Math.min(line.length(), 255)) + "', '" + color.getInt() + "')");
 			}
 		}
 	}

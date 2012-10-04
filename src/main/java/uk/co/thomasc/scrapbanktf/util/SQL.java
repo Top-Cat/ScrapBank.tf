@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class SQL {
 
@@ -51,11 +52,11 @@ public class SQL {
 	public int insert(String sql) {
 		synchronized (conn) {
 			try {
-				final PreparedStatement pr = conn.prepareStatement(sql);
+				final PreparedStatement pr = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 				pr.executeUpdate();
 				final ResultSet rs = pr.getGeneratedKeys();
-				if (rs.first()) {
-					rs.getLong(1);
+				if (rs.next()) {
+					return rs.getInt(1);
 				}
 			} catch (final SQLException e) {
 				e.printStackTrace();

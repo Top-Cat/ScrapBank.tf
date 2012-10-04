@@ -40,7 +40,7 @@ public class ItemInfo {
 		} else if (val instanceof Double) {
 			attributes.put((int) (long) obj.get("defindex"), (double) val);
 		} else {
-			System.out.println("wut?" + val.getClass());
+			Util.printConsole("wut?" + val.getClass());
 		}
 	}
 

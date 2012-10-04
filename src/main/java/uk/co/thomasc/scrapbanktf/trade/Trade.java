@@ -201,7 +201,7 @@ public class Trade {
 							}
 							break;
 						default:
-							System.out.println("Unknown Event ID: " + evt.action);
+							Util.printConsole("Unknown Event ID: " + evt.action);
 							break;
 					}
 
@@ -250,7 +250,7 @@ public class Trade {
 			}
 
 			if (status.logpos != 0) {
-				System.out.println("WAT");
+				Util.printConsole("WAT");
 				logpos = status.logpos;
 			}
 		}
