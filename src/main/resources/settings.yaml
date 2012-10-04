@@ -1,0 +1,13 @@
+admins:
+    - 76561198123456789
+    - 76561198123456789
+apikey: YOURAPIKEY
+bots:
+    - username: Bot1
+      password: PASSWORD
+      id: 1
+      displayname: Bot1
+    - username: Bot2
+      password: PASSWORD
+      id: 2
+      displayname: Bot2
