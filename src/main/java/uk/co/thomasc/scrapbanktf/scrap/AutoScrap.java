@@ -2,7 +2,9 @@ package uk.co.thomasc.scrapbanktf.scrap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import uk.co.thomasc.scrapbanktf.Bot;
@@ -13,18 +15,18 @@ import uk.co.thomasc.scrapbanktf.util.ConsoleColor;
 import uk.co.thomasc.scrapbanktf.util.MutableInt;
 import uk.co.thomasc.scrapbanktf.util.Util;
 import uk.co.thomasc.steamkit.base.ClientMsgProtobuf;
-import uk.co.thomasc.steamkit.base.gc.ClientGCMsg;
-import uk.co.thomasc.steamkit.base.gc.tf2.GCMsgCraftItem;
+import uk.co.thomasc.steamkit.base.gc.tf2.ECraftingRecipe;
 import uk.co.thomasc.steamkit.base.generated.SteammessagesClientserver.CMsgClientGamesPlayed;
 import uk.co.thomasc.steamkit.base.generated.SteammessagesClientserver.CMsgClientGamesPlayed.GamePlayed;
 import uk.co.thomasc.steamkit.base.generated.steamlanguage.EMsg;
-import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.SteamGameCoordinator;
+import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.callbacks.CraftResponseCallback;
 
 public class AutoScrap {
 
 	private final Bot bot;
 	private Boolean ingame = false;
 	private static Object lck = new Object();
+	private Map<Integer, List<Long>> metal = new HashMap<Integer, List<Long>>();
 
 	public AutoScrap(Bot bot) {
 		this.bot = bot;
@@ -44,8 +46,22 @@ public class AutoScrap {
 			notify();
 		}
 	}
+	
+	private CraftResponseCallback response;
+	private Object craftWait = new Object();
+	
+	public void onCraft(CraftResponseCallback response) {
+		this.response = response;
+		synchronized (craftWait) {
+			craftWait.notify();
+		}
+	}
 
-	private void scrap(long item1, long item2) {
+	private CraftResponseCallback scrap(long item1, long item2) {
+		return craft(ECraftingRecipe.SmeltClassWeapons, item1, item2);
+	}
+	
+	private CraftResponseCallback craft(ECraftingRecipe recipe, long... items) {
 		if (!ingame) {
 			opengame();
 			try {
@@ -56,25 +72,56 @@ public class AutoScrap {
 				e.printStackTrace();
 			}
 		}
-		craft(item1, item2);
+		bot.steamGC.craft(recipe, items);
+		try {
+			synchronized (craftWait) {
+				craftWait.wait();
+			}
+			return response;
+		} catch (final InterruptedException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
-
-	private void craft(long item1, long item2) {
-		final ClientGCMsg<GCMsgCraftItem> msg = new ClientGCMsg<GCMsgCraftItem>(GCMsgCraftItem.class);
-
-		msg.getBody().recipe = 3;
-		msg.getBody().items.add(item1);
-		msg.getBody().items.add(item2);
-
-		bot.steamClient.getHandler(SteamGameCoordinator.class).send(msg, 440);
+	
+	public void combine() {
+		if (metal.get(1).size() < 2 && metal.get(2).size() > 0) { // We need more reclaimed!
+			CraftResponseCallback res = craft(ECraftingRecipe.SmeltRefined, metal.get(2).remove(0));
+			for (Long item : res.getItems()) {
+				metal.get(1).add(item);
+			}
+		}
+		if (metal.get(0).size() < 2 && metal.get(1).size() > 0) { // We need more scrap!
+			CraftResponseCallback res = craft(ECraftingRecipe.SmeltReclaimed, metal.get(1).remove(0));
+			for (Long item : res.getItems()) {
+				metal.get(0).add(item);
+			}
+		}
+		
+		while (metal.get(0).size() > 4) {
+			CraftResponseCallback res = craft(ECraftingRecipe.CombineScrap, metal.get(0).remove(0), metal.get(0).remove(0), metal.get(0).remove(0));
+			for (Long item : res.getItems()) { // Should only be one, but who knows :P
+				metal.get(1).add(item);
+			}
+		}
+		while (metal.get(1).size() > 4) {
+			CraftResponseCallback res = craft(ECraftingRecipe.CombineReclaimed, metal.get(1).remove(0), metal.get(1).remove(0), metal.get(1).remove(0));
+			for (Long item : res.getItems()) { // Should only be one, but who knows :P
+				metal.get(2).add(item);
+			}
+		}
 	}
 
 	public void run() {
 		synchronized (AutoScrap.lck) {
-			final Inventory MyInventory = Inventory.fetchInventory(bot.steamClient.getSteamId().convertToLong());
+			final Inventory MyInventory = Inventory.fetchInventory(bot.steamClient.getSteamId().convertToLong(), false);
 			if (MyInventory == null) {
 				Util.printConsole("Could not fetch own inventory via Steam API! (AutoScrap)", bot, ConsoleColor.White, true);
 			}
+			
+			metal.put(0, new ArrayList<Long>());
+			metal.put(1, new ArrayList<Long>());
+			metal.put(2, new ArrayList<Long>());
 
 			final ResultSet result = Main.sql.selectQuery("SELECT schemaid, classid, (stock - COUNT(reservation.Id) + IF(highvalue=1 and stock - COUNT(reservation.Id) > 1,-2,0)) as stk FROM items LEFT JOIN reservation ON items.schemaid = reservation.itemid WHERE highvalue != 2 GROUP BY items.schemaid HAVING stk > 4");
 			final Map<Integer, MutableInt> count = new HashMap<Integer, MutableInt>();
@@ -102,15 +149,22 @@ public class AutoScrap {
 					count.get(item.defIndex).decrement();
 					if (otherid.containsKey(classid.get(item.defIndex))) {
 						final Item item2 = MyInventory.getItem(otherid.get(classid.get(item.defIndex)));
-						scrap(otherid.get(classid.get(item.defIndex)), id);
+						CraftResponseCallback callback = scrap(otherid.get(classid.get(item.defIndex)), id);
+						for (long itemId : callback.getItems()) {
+							metal.get(0).add(itemId);
+						}
 						scraped.get(item.defIndex).increment();
 						scraped.get(item2.defIndex).increment();
 						otherid.remove(classid.get(item.defIndex));
 					} else {
 						otherid.put(classid.get(item.defIndex), id);
 					}
+				} else if (item.defIndex >= 5000 && item.defIndex <= 5002) {
+					metal.get(item.defIndex - 5000).add(item.id);
 				}
 			}
+
+			combine();
 
 			int totalItems = 0;
 			for (final int id : scraped.keySet()) {

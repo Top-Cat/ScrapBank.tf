@@ -58,7 +58,7 @@ public class Main {
 				try {
 					new Bot(info);
 				} catch (final Exception e) {
-					String error = "Unhandled error on bot " +  crashes++ + "\n" + e.getMessage();
+					String error = "Unhandled error on bot " +  crashes++ + "\n" + e.getClass() + " at";
 					for (StackTraceElement el : e.getStackTrace()) {
 						error += "\n" + el;
 					}

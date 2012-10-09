@@ -92,7 +92,7 @@ public class QueueHandler implements Runnable {
 				Bot toRemove = null;
 				for (final Bot bot : QueueHandler.needItems) {
 					if (bot != this.bot) {
-						final List<Integer> MyInventory = Inventory.fetchInventory(this.bot.steamClient.getSteamId().convertToLong()).getItems();
+						final List<Integer> MyInventory = Inventory.fetchInventory(this.bot.steamClient.getSteamId().convertToLong(), false).getItems();
 						final List<Integer> toTrade = new ArrayList<Integer>();
 						for (final int itemid : bot.queueHandler.neededItems) {
 							if (MyInventory.contains(itemid)) {
@@ -107,6 +107,7 @@ public class QueueHandler implements Runnable {
 							toRemove = bot;
 							currentTrader = new DbRow(0, null);
 							this.bot.toTrade = toTrade;
+							bot.queueHandler.autoScrap.run();
 							this.bot.steamTrade.trade(bot.steamClient.getSteamId());
 							break;
 						}
@@ -118,6 +119,7 @@ public class QueueHandler implements Runnable {
 			}
 
 			if (gotItems) {
+				autoScrap.run();
 				Util.printConsole("Items acquired, sending trade request", bot, ConsoleColor.Yellow);
 				bot.steamTrade.trade(currentTrader.getSteamId());
 				gotItems = false;
@@ -129,7 +131,7 @@ public class QueueHandler implements Runnable {
 					Util.printConsole("Fetching next user from queue", bot, ConsoleColor.Yellow);
 					currentTrader = tradeQueue.poll();
 
-					final List<Integer> MyInventory = Inventory.fetchInventory(bot.steamClient.getSteamId().convertToLong()).getItems();
+					final List<Integer> MyInventory = Inventory.fetchInventory(bot.steamClient.getSteamId().convertToLong(), false).getItems();
 					final ResultSet reader = Main.sql.selectQuery("SELECT itemid FROM reservation WHERE steamid = '" + currentTrader.getSteamId().convertToLong() + "'");
 					reserved.clear();
 					while (reader.next()) {

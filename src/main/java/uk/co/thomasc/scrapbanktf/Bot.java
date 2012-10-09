@@ -30,6 +30,8 @@ import uk.co.thomasc.steamkit.steam3.handlers.steamapps.callbacks.GameConnectTok
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.SteamFriends;
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.callbacks.FriendMsgCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.callbacks.PersonaStateCallback;
+import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.SteamGameCoordinator;
+import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.callbacks.CraftResponseCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.callbacks.MessageCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamtrading.SteamTrading;
 import uk.co.thomasc.steamkit.steam3.handlers.steamtrading.callbacks.SessionStartCallback;
@@ -63,6 +65,7 @@ public class Bot {
 	public SteamFriends steamFriends;
 	public SteamClient steamClient;
 	public SteamTrading steamTrade;
+	public SteamGameCoordinator steamGC;
 	public SteamUser steamUser;
 
 	public QueueHandler queueHandler;
@@ -93,6 +96,7 @@ public class Bot {
 		steamTrade = steamClient.getHandler(SteamTrading.class);
 		steamUser = steamClient.getHandler(SteamUser.class);
 		steamFriends = steamClient.getHandler(SteamFriends.class);
+		steamGC = steamClient.getHandler(SteamGameCoordinator.class);
 		queueHandler = new QueueHandler(this);
 
 		steamClient.connect();
@@ -126,11 +130,11 @@ public class Bot {
 			try {
 				currentTrade.Poll();
 			} catch (final Exception e) {
-				String error = "Error polling the trade: ";
+				String error = "Error polling the trade: " + e.getClass();
 				for (StackTraceElement el : e.getStackTrace()) {
 					error += "\n" + el;
 				}
-				Util.printConsole(error, this);
+				Util.printConsole(error, this, ConsoleColor.White, true);
 			}
 		}
 	}
@@ -165,6 +169,13 @@ public class Bot {
 				if (callback.getEMsg() == EGCMsgBase.ClientWelcome) {
 					queueHandler.autoScrap.onWelcome();
 				}
+			}
+		});
+		
+		msg.handle(CraftResponseCallback.class, new ActionT<CraftResponseCallback>() {
+			@Override
+			public void call(CraftResponseCallback obj) {
+				queueHandler.autoScrap.onCraft(obj);
 			}
 		});
 

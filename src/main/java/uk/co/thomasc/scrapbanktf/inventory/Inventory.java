@@ -13,7 +13,11 @@ import uk.co.thomasc.scrapbanktf.util.Util;
 public class Inventory {
 
 	public static Inventory fetchInventory(long steamId) {
-		final String response = Util.webRequest("http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + BotInfo.getApiKey() + "&SteamID=" + steamId + "&format=json");
+		return fetchInventory(steamId, true);
+	}
+	
+	public static Inventory fetchInventory(long steamId, boolean useCache) {
+		final String response = Util.webRequest("http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + BotInfo.getApiKey() + "&SteamID=" + steamId + "&format=json", useCache);
 		try {
 			final JSONObject ret = (JSONObject) new JSONParser().parse(response);
 			return new Inventory((JSONObject) ret.get("result"));

@@ -88,7 +88,11 @@ public class Util {
 	}
 
 	public static String webRequest(String url) {
-		if (Util.webResponses.containsKey(url)) {
+		return webRequest(url, true);
+	}
+	
+	public static String webRequest(String url, boolean useCache) {
+		if (useCache && Util.webResponses.containsKey(url)) {
 			if (Util.webResponses.get(url).isRecent()) {
 				return Util.webResponses.get(url).getResponse();
 			}

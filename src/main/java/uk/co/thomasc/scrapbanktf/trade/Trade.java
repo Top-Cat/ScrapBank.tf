@@ -104,13 +104,13 @@ public class Trade {
 			}
 
 			// fetch other player's inventory from the Steam API.
-			OtherInventory = Inventory.fetchInventory(otherSID.convertToLong());
+			OtherInventory = Inventory.fetchInventory(otherSID.convertToLong(), false);
 			if (OtherInventory == null) {
 				throw new Exception("Could not fetch other player's inventory via Steam API!");
 			}
 
 			// fetch our inventory from the Steam API.
-			MyInventory = Inventory.fetchInventory(meSID.convertToLong());
+			MyInventory = Inventory.fetchInventory(meSID.convertToLong(), false);
 			if (MyInventory == null) {
 				throw new Exception("Could not fetch own inventory via Steam API!");
 			}
@@ -127,6 +127,8 @@ public class Trade {
 		}
 
 	}
+	
+	public StatusObj status = null;
 
 	@SuppressWarnings("unchecked")
 	public void Poll() {
@@ -137,7 +139,6 @@ public class Trade {
 				LastAction = new Date();
 			}
 
-			StatusObj status = null;
 			try {
 				status = getStatus();
 			} catch (final ParseException e) {
@@ -240,8 +241,8 @@ public class Trade {
 
 			// Update Local Variables
 			if (status.them != null) {
-				otherReady = status.them.ready == 1 ? true : false;
-				meReady = status.me.ready == 1 ? true : false;
+				otherReady = status.them.ready;
+				meReady = status.me.ready;
 			}
 
 			// Update version
@@ -307,7 +308,16 @@ public class Trade {
 		data.put("version", "" + version);
 		final String response = fetch(baseTradeURL + "toggleready", "POST", data);
 		try {
-			return (boolean) ((JSONObject) new JSONParser().parse(response)).get("success");
+			StatusObj status = new StatusObj((JSONObject) new JSONParser().parse(response));
+			if (status.success) {
+				if (status.trade_status == 0) {
+					otherReady = status.them.ready;
+					meReady = status.me.ready;
+				} else {
+					meReady = true;
+				}
+				return meReady;
+			}
 		} catch (final ParseException e) {
 			e.printStackTrace();
 		}

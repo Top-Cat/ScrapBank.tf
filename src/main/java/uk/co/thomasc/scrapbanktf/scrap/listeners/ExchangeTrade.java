@@ -74,28 +74,25 @@ public class ExchangeTrade extends TradeListener {
 				myCount.get(i).decrement();
 			}
 		}
+		
+		int metalDiff = Math.max(0, myCount.get(5000).get() + myCount.get(5001).get() * 3 + myCount.get(5002).get() * 9 - (otherCount.get(5000).get() + otherCount.get(5001).get() * 3 + otherCount.get(5002).get() * 9)) / 2;
 
 		for (final long child : trade.MyItems.getIds()) {
 			final Item item = trade.MyInventory.getItem(child);
 
-			if (bot.toTrade.contains(item.defIndex) || (myCount.containsKey(item.defIndex) ? myCount.get(item.defIndex).get() : 0) - (otherCount.containsKey(item.defIndex) ? otherCount.get(item.defIndex).get() : 0) > 1) {
-				if (item.defIndex == 5000) {
-					scrapDiff--;
-				} else {
-					itemDiff--;
-				}
-				Util.printConsole(slot + ", added " + item.defIndex, bot, ConsoleColor.White, true);
-				trade.addItem(item.id, slot++);
-				if (myCount.containsKey(item.defIndex)) {
-					myCount.get(item.defIndex).decrement();
-					if (otherCount.containsKey(item.defIndex)) {
-						otherCount.get(item.defIndex).increment();
-					} else {
-						otherCount.put(item.defIndex, new MutableInt());
-					}
-				}
-				bot.toTrade.remove((Integer) item.defIndex);
+			if (item.defIndex == 5000 && metalDiff % 3 > 0) {
+				metalDiff--;
+				scrapDiff--;
+			} else if (item.defIndex == 5001 && (metalDiff / 3) % 3 > 0) {
+				metalDiff -= 3;
+				scrapDiff -= 3;
+			} else if (item.defIndex == 5002 && (metalDiff / 9) % 3 > 0) {
+				metalDiff -= 9;
+				scrapDiff -= 9;
+			} else if ((item.defIndex >= 5000 && item.defIndex <= 5002) || (!bot.toTrade.contains(item.defIndex) && !((myCount.containsKey(item.defIndex) ? myCount.get(item.defIndex).get() : 0) - (otherCount.containsKey(item.defIndex) ? otherCount.get(item.defIndex).get() : 0) > 1))) {
+				continue;
 			}
+			addItem(item, myCount, otherCount);
 		}
 
 		OK = true;
@@ -104,15 +101,32 @@ public class ExchangeTrade extends TradeListener {
 		bot.toTrade.clear();
 	}
 
+	private void addItem(Item item, Map<Integer, MutableInt> myCount, Map<Integer, MutableInt> otherCount) {
+		if (item.defIndex != 5000) {
+			itemDiff--;
+		}
+		Util.printConsole(slot + ", added " + item.defIndex, bot, ConsoleColor.White, true);
+		trade.addItem(item.id, slot++);
+		if (myCount.containsKey(item.defIndex)) {
+			myCount.get(item.defIndex).decrement();
+			if (otherCount.containsKey(item.defIndex)) {
+				otherCount.get(item.defIndex).increment();
+			} else {
+				otherCount.put(item.defIndex, new MutableInt());
+			}
+		}
+		bot.toTrade.remove((Integer) item.defIndex);
+	}
+	
 	@Override
 	public void onUserAccept() {
-		OnFinished();
+		onFinished();
 	}
 
 	@Override
 	public void onUserSetReadyState(boolean ready) {
 		if (trade.meReady) {
-			OnFinished();
+			onFinished();
 		} else if (ready) {
 			while (!trade.setReady(true)) {
 				;
@@ -120,27 +134,22 @@ public class ExchangeTrade extends TradeListener {
 		}
 	}
 
-	public void OnFinished() {
+	public void onFinished() {
 		done = false;
 		try {
-			StatusObj js = null;
+			Util.printConsole("Finish " + bot.steamClient.getSteamId(), bot, ConsoleColor.Yellow, true);
 			while (!done) {
 				try {
 					Thread.sleep(500);
 				} catch (final InterruptedException e) {
 					e.printStackTrace();
 				}
-				js = new StatusObj(trade.acceptTrade());
-				done = js.trade_status == 1 || js.me.confirmed;
-			}
-			if (js.success == true) {
-				Util.printConsole("Success " + bot.steamClient.getSteamId(), bot, ConsoleColor.Yellow, true);
-				return;
+				trade.status = new StatusObj(trade.acceptTrade());
+				done = trade.status.success && (trade.status.trade_status == 1 || trade.status.me.confirmed);
 			}
 		} catch (final ParseException e) {
 			e.printStackTrace();
 		}
-		Util.printConsole("Failure " + bot.steamClient.getSteamId(), bot, ConsoleColor.Yellow, true);
 	}
 
 	@Override
@@ -163,6 +172,10 @@ public class ExchangeTrade extends TradeListener {
 	public void onUserAddItem(ItemInfo schemaItem, Item invItem) {
 		if (invItem.defIndex == 5000) {
 			scrapDiff++;
+		} else if (invItem.defIndex == 5001) {
+			scrapDiff += 3;
+		} else if (invItem.defIndex == 5002) {
+			scrapDiff += 9;
 		} else {
 			itemDiff++;
 		}
@@ -175,7 +188,9 @@ public class ExchangeTrade extends TradeListener {
 
 	@Override
 	public void onMessage(String message) {
-		otherOK = true;
+		if (message.equalsIgnoreCase("k")) {
+			otherOK = true;
+		}
 	}
 
 	@Override

@@ -12,7 +12,7 @@ public class StatusObj {
 
 	public boolean success;
 
-	public long trade_status;
+	public long trade_status = -1;
 
 	public int version;
 
