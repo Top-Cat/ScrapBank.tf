@@ -75,7 +75,7 @@ public class AutoScrap {
 		bot.steamGC.craft(recipe, items);
 		try {
 			synchronized (craftWait) {
-				craftWait.wait();
+				craftWait.wait(30000);
 			}
 			return response;
 		} catch (final InterruptedException e) {
@@ -87,27 +87,35 @@ public class AutoScrap {
 	public void combine() {
 		if (metal.get(1).size() < 2 && metal.get(2).size() > 0) { // We need more reclaimed!
 			CraftResponseCallback res = craft(ECraftingRecipe.SmeltRefined, metal.get(2).remove(0));
-			for (Long item : res.getItems()) {
-				metal.get(1).add(item);
+			if (res != null) {
+				for (Long item : res.getItems()) {
+					metal.get(1).add(item);
+				}
 			}
 		}
 		if (metal.get(0).size() < 2 && metal.get(1).size() > 0) { // We need more scrap!
 			CraftResponseCallback res = craft(ECraftingRecipe.SmeltReclaimed, metal.get(1).remove(0));
-			for (Long item : res.getItems()) {
-				metal.get(0).add(item);
+			if (res != null) {
+				for (Long item : res.getItems()) {
+					metal.get(0).add(item);
+				}
 			}
 		}
 		
 		while (metal.get(0).size() > 4) {
 			CraftResponseCallback res = craft(ECraftingRecipe.CombineScrap, metal.get(0).remove(0), metal.get(0).remove(0), metal.get(0).remove(0));
-			for (Long item : res.getItems()) { // Should only be one, but who knows :P
-				metal.get(1).add(item);
+			if (res != null) {
+				for (Long item : res.getItems()) { // Should only be one, but who knows :P
+					metal.get(1).add(item);
+				}
 			}
 		}
 		while (metal.get(1).size() > 4) {
 			CraftResponseCallback res = craft(ECraftingRecipe.CombineReclaimed, metal.get(1).remove(0), metal.get(1).remove(0), metal.get(1).remove(0));
-			for (Long item : res.getItems()) { // Should only be one, but who knows :P
-				metal.get(2).add(item);
+			if (res != null) {
+				for (Long item : res.getItems()) { // Should only be one, but who knows :P
+					metal.get(2).add(item);
+				}
 			}
 		}
 	}
@@ -150,8 +158,10 @@ public class AutoScrap {
 					if (otherid.containsKey(classid.get(item.defIndex))) {
 						final Item item2 = MyInventory.getItem(otherid.get(classid.get(item.defIndex)));
 						CraftResponseCallback callback = scrap(otherid.get(classid.get(item.defIndex)), id);
-						for (long itemId : callback.getItems()) {
-							metal.get(0).add(itemId);
+						if (callback != null) {
+							for (long itemId : callback.getItems()) {
+								metal.get(0).add(itemId);
+							}
 						}
 						scraped.get(item.defIndex).increment();
 						scraped.get(item2.defIndex).increment();

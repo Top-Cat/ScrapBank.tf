@@ -11,6 +11,7 @@ import lombok.Getter;
 
 import sun.misc.BASE64Encoder;
 
+import uk.co.thomasc.scrapbanktf.command.Command;
 import uk.co.thomasc.scrapbanktf.command.Commands;
 import uk.co.thomasc.scrapbanktf.scrap.QueueHandler;
 import uk.co.thomasc.scrapbanktf.scrap.listeners.AdminTrade;
@@ -28,6 +29,7 @@ import uk.co.thomasc.steamkit.base.generated.steamlanguage.EPersonaState;
 import uk.co.thomasc.steamkit.base.generated.steamlanguage.EResult;
 import uk.co.thomasc.steamkit.steam3.handlers.steamapps.callbacks.GameConnectTokensCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.SteamFriends;
+import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.callbacks.ChatMsgCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.callbacks.FriendMsgCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamfriends.callbacks.PersonaStateCallback;
 import uk.co.thomasc.steamkit.steam3.handlers.steamgamecoordinator.SteamGameCoordinator;
@@ -205,6 +207,10 @@ public class Bot {
 
 				steamFriends.setPersonaName("[ScrapBank] " + info.getDisplayName());
 				steamFriends.setPersonaState(EPersonaState.LookingToTrade);
+				
+				if (info.getId() == 1) {
+					steamFriends.joinChat(steamFriends.getClanByIndex(0));
+				}
 
 				for (final SteamID bot : Main.bots) {
 					if (steamFriends.getFriendRelationship(bot) != EFriendRelationship.Friend) {
@@ -243,6 +249,31 @@ public class Bot {
 			}
 		});
 
+		msg.handle(ChatMsgCallback.class, new ActionT<ChatMsgCallback>() {
+			@Override
+			public void call(ChatMsgCallback callback) {
+				//Type (emote or chat)
+				final EChatEntryType type = callback.getChatMsgType();
+
+				if (type == EChatEntryType.ChatMsg) {
+					String response = "";
+					if (responses.containsKey(callback.getMessage().toLowerCase())) {
+						response = responses.get(callback.getMessage().toLowerCase());
+					} else {
+						final String[] args = callback.getMessage().split(" ");
+						final String text = Util.removeArg0(callback.getMessage());
+						final String[] pArgs = text.split(" ");
+
+						Command cmd = Commands.getCommand(args[0]);
+						if (cmd != Commands.unknown) {
+							response = cmd.call(Bot.this, callback.getChatterID(), pArgs, text);
+						}
+					}
+					steamFriends.sendChatRoomMessage(callback.getChatRoomID(), EChatEntryType.ChatMsg, response);
+				}
+			}
+		});
+		
 		msg.handle(FriendMsgCallback.class, new ActionT<FriendMsgCallback>() {
 			@Override
 			public void call(FriendMsgCallback callback) {

@@ -3,6 +3,7 @@ package uk.co.thomasc.scrapbanktf.scrap.listeners;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 import uk.co.thomasc.scrapbanktf.Bot;
@@ -138,14 +139,19 @@ public class ExchangeTrade extends TradeListener {
 		done = false;
 		try {
 			Util.printConsole("Finish " + bot.steamClient.getSteamId(), bot, ConsoleColor.Yellow, true);
+			int max = 0;
 			while (!done) {
 				try {
 					Thread.sleep(500);
 				} catch (final InterruptedException e) {
 					e.printStackTrace();
 				}
-				trade.status = new StatusObj(trade.acceptTrade());
+				JSONObject json = trade.acceptTrade();
+				trade.status = new StatusObj(json);
 				done = trade.status.success && (trade.status.trade_status == 1 || trade.status.me.confirmed);
+				if (max++ > 20) {
+					break;
+				}
 			}
 		} catch (final ParseException e) {
 			e.printStackTrace();

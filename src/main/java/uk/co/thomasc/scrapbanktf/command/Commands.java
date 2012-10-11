@@ -11,7 +11,7 @@ public enum Commands {
 	MISSING(Missing.class),
 	QUOTE(Quote.class), ;
 
-	private static Unknown unknown = new Unknown();
+	public static Unknown unknown = new Unknown();
 	private Command cmd;
 
 	private Commands(Class<? extends Command> clazz) {
