@@ -277,7 +277,7 @@ public class ScrapTrade extends TradeListener {
 						cScrap -= 3;
 						trade.removeItem(item.id);
 						usedSlots.remove(item.id);
-					} else if (item.defIndex == 5002 && (cScrap / 9) % 3 > (scrapB / 9) % 3) {
+					} else if (item.defIndex == 5002 && cScrap / 9 > scrapB / 9) {
 						cScrap -= 9;
 						trade.removeItem(item.id);
 						usedSlots.remove(item.id);
@@ -289,7 +289,7 @@ public class ScrapTrade extends TradeListener {
 					} else if (item.defIndex == 5001 && (cScrap / 3) % 3 < (scrapB / 3) % 3) {
 						cScrap += 3;
 						trade.addItem(item.id, getUnusedSlot(item.id));
-					} else if (item.defIndex == 5002 && (cScrap / 9) % 3 < (scrapB / 9) % 3) {
+					} else if (item.defIndex == 5002 && cScrap / 9 < scrapB / 9) {
 						cScrap += 9;
 						trade.addItem(item.id, getUnusedSlot(item.id));
 					}
